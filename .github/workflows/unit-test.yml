@@ -8,19 +8,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: ouzi-dev/commit-status-updater@v2
       - name: Install Protoc
         uses: arduino/setup-protoc@v2
-
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: '1.21'
-
+          
       - name: Make init
         run: make init && make all
-
+        
       - name: Build
         run: go build -v ./...
 
       - name: Test
         run: go test -v ./...
+
+      - if: always()
+        uses: ouzi-dev/commit-status-updater@v2
+        with:
+          status: "${{ job.status }}"
