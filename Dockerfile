@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         && rm -rf /var/lib/apt/lists/ \
         && apt-get autoremove -y && apt-get autoclean -y
 
-RUN curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v3.15.8/protoc-3.15.8-linux-x86_64.zip && unzip protoc-3.15.8-linux-x86_64.zip -d ./protoc && mv ./protoc/bin/protoc /usr/lcoal/bin/ && rm -rf protoc-3.15.8-linux-x86_64.zip ./protoc
+RUN curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v3.15.8/protoc-3.15.8-linux-x86_64.zip && unzip protoc-3.15.8-linux-x86_64.zip -d ./protoc && mv ./protoc/bin/protoc /usr/local/bin/ && rm -rf protoc-3.15.8-linux-x86_64.zip ./protoc
 
 RUN  make init && make all && make build
 
