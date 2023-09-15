@@ -1,8 +1,7 @@
 name: Go package
 
 on:
-  pull_request:
-    types: [opened, reopened,synchronize]
+  push
 
 jobs:
   build:
@@ -10,11 +9,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ouzi-dev/commit-status-updater@v2
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v2
 
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: '1.21'
+
+      - name: Make init
+        run: make init && make all
 
       - name: Build
         run: go build -v ./...
