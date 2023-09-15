@@ -8,7 +8,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: ouzi-dev/commit-status-updater@v2
       - name: Install Protoc
         uses: arduino/setup-protoc@v2
 
@@ -25,8 +24,3 @@ jobs:
 
       - name: Test
         run: go test -v ./...
-
-      - if: always()
-        uses: ouzi-dev/commit-status-updater@v2
-        with:
-          status: "${{ job.status }}"
