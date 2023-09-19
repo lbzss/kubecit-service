@@ -11,6 +11,7 @@ env:
 
 jobs:
   pack:
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -23,9 +24,11 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: docker build
+        env: 
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t z627062293/kubecit-service:${{env.IMAGE_VERSION}} -f ./Dockerfile .
+          docker build -t z627062293/kubecit-service:$IMAGE_TAG -f ./Dockerfile .
 
       - name: docker push
         run: |
-          docker push z627062293/kubecit-service:${{env.IMAGE_VERSION}}
+          docker push z627062293/kubecit-service:$IMAGE_TAG
