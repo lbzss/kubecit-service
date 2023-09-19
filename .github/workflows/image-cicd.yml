@@ -21,7 +21,7 @@ jobs:
 
       - name: docker build
         env: 
-          IMAGE_TAG: ${{ github.head_ref }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build -t z627062293/kubecit-service:$IMAGE_TAG -f ./Dockerfile .
           docker push z627062293/kubecit-service:$IMAGE_TAG
