@@ -6,12 +6,8 @@ on:
     branches:
       - 'master'
 
-env:
-  IMAGE_VERSION: latest
-
 jobs:
   pack:
-    # if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -25,7 +21,7 @@ jobs:
 
       - name: docker build
         env: 
-          IMAGE_TAG: ${{ github.sha }}
+          IMAGE_TAG: ${{ github.ref }}
         run: |
           docker build -t z627062293/kubecit-service:$IMAGE_TAG -f ./Dockerfile .
           docker push z627062293/kubecit-service:$IMAGE_TAG
