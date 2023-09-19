@@ -28,7 +28,4 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build -t z627062293/kubecit-service:$IMAGE_TAG -f ./Dockerfile .
-
-      - name: docker push
-        run: |
           docker push z627062293/kubecit-service:$IMAGE_TAG
