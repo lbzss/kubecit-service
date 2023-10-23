@@ -255,6 +255,29 @@ service Kubecit {
     };
   }
 
+  rpc BecomeVip (BecomeVipRequest) returns (BecomeVipReply) {
+    option (google.api.http) = {
+      post: "/api/u/become",
+      body: "*"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "用户升级为vip"
+      tags: "user"
+    };
+  }
+  // ========================== 交易相关接口 ===================================
+  rpc TradeCallback (TradeCallbackRequest) returns (TradeCallbackReply) {
+    option (google.api.http) = {
+      post: "/api/trade/callback",
+      body: "*"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "第三方支付回调接口"
+      tags: "trade"
+    };
+  }
 
   // ========================== 系统设置相关接口 ===================================
   rpc CreateSlider (CreateSliderRequest) returns (CreateSliderReply) {
@@ -1526,6 +1549,10 @@ message UserInfoReply{
   string channel = 3;
   int32 user_id = 4;
   int32 teacher_id = 5;
+  int32 isVip = 6[(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      title: "vip信息",
+      description: "1是vip，2不是vip"
+    }];
 }
 
 
@@ -1727,4 +1754,41 @@ message OrderPayRequest {
       title: "支付方式",
       description: "NO_PAY = 1 ; // 还未支付 ALIPAY = 2; // 支付宝 WECHAT = 3; // 微信支付 GOLDEN_LEAF = 4;  // 金叶子 SILVER_LEAF = 5;  //银叶子"
     }, (google.api.field_behavior) = REQUIRED];
+}
+
+message BecomeVipRequest {
+  PayType payType = 1;
+  VipType vipType = 2;
+  float price = 3;
+}
+
+message BecomeVipReply {
+  string payLink = 1;
+  int64 bizId = 2;
+}
+
+
+enum VipType {
+  VIP_TYPE_UNKNOWN = 0;
+  VIP_TYPE_MONTHLY = 1;
+  VIP_TYPE_QUARTERLY = 2;
+  VIP_TYPE_YEARLY = 3;
+  VIP_TYPE_FOREVER = 4;
+}
+
+enum TradeStatus {
+  TRADE_STATUS_UNKNOWN = 0;
+  TRADE_CLOSED = 1;
+  TRADE_SUCCESS = 2;
+  TRADE_FINISHED = 3;
+}
+
+message TradeCallbackRequest {
+//  PayType payType = 1;
+  int64 bizNo = 2;
+  TradeStatus payStatus = 3;
+}
+
+message TradeCallbackReply {
+  string message = 1;
 }

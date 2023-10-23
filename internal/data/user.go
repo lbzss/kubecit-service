@@ -2,12 +2,12 @@ package data
 
 import (
 	"context"
+	"github.com/go-kratos/kratos/v2/log"
 	"kubecit-service/ent"
 	"kubecit-service/ent/account"
 	"kubecit-service/ent/user"
+	"kubecit-service/ent/viporder"
 	"kubecit-service/internal/biz"
-
-	"github.com/go-kratos/kratos/v2/log"
 )
 
 type userRepo struct {
@@ -135,4 +135,68 @@ func (repo *userRepo) saveAccountAndUser(ctx context.Context, accountPO *biz.Acc
 
 	}
 	return nil
+}
+
+func (repo *userRepo) Become(ctx context.Context, req *biz.BecomeOrderInfo) error {
+	_, err := repo.data.db.VipOrder.Create().SetBizID(req.BizId).SetPrice(req.Price).SetVipType(int8(req.VipType)).
+		SetPayType(int8(req.PayType)).SetUserID(req.UserId).Save(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (repo *userRepo) Callback(ctx context.Context, req *biz.VipInfo, payStatus int) (*biz.VipInfo, error) {
+	result, err := repo.data.WithResultTx(ctx, func(tx *ent.Tx) (interface{}, error) {
+		return repo.callback(ctx, req, payStatus)
+	})
+	if err != nil {
+		return nil, err
+	}
+	if vipInfo, ok := result.(*biz.VipInfo); ok {
+		return vipInfo, nil
+	}
+	return nil, err
+}
+
+func (repo *userRepo) callback(ctx context.Context, req *biz.VipInfo, payStatus int) (*biz.VipInfo, error) {
+	order, err := repo.data.db.VipOrder.Query().Where(viporder.BizIDEQ(req.VipOrderId)).Only(ctx)
+	if err != nil {
+		repo.log.Errorf("query vip order error: %v", err)
+		return nil, err
+	}
+	order, err = repo.data.db.VipOrder.UpdateOne(order).SetPayStatus(int8(payStatus)).Save(ctx)
+	if err != nil {
+		repo.log.Errorf("update vip order error: %v", err)
+		return nil, err
+	}
+	info, err := repo.data.db.VipInfo.Create().SetUserID(order.UserID).SetVipType(order.VipType).SetStartAt(req.StartAt).
+		SetExpireAt(req.ExpireAt).Save(ctx)
+	if err != nil {
+		repo.log.Errorf("create  vip info error: %v", err)
+		return nil, err
+	}
+	return &biz.VipInfo{
+		Id:       info.ID,
+		VipType:  int(info.VipType),
+		StartAt:  info.StartAt,
+		ExpireAt: info.ExpireAt,
+		UserId:   info.UserID,
+	}, nil
+}
+
+func (repo *userRepo) GetOrderInfo(ctx context.Context, bizId int64) (*biz.BecomeOrderInfo, error) {
+	record, err := repo.data.db.Debug().VipOrder.Query().Where(viporder.BizIDEQ(bizId)).Only(ctx)
+	if err != nil {
+		repo.log.Errorf("query order info error: %v", err)
+		return nil, err
+	}
+	return &biz.BecomeOrderInfo{
+		UserId:    record.UserID,
+		PayType:   int(record.PayType),
+		VipType:   int(record.VipType),
+		PayStatus: int(record.PayStatus),
+		BizId:     record.BizID,
+		Price:     record.Price,
+	}, nil
 }

@@ -75,6 +75,27 @@ type UserPO struct {
 	TeacherId int
 }
 
+type BecomeOrderInfo struct {
+	Id        int
+	UserId    int
+	PayType   int
+	VipType   int
+	PayStatus int
+	BizId     int64
+	Price     float64
+	StartAt   time.Time
+	ExpireAt  time.Time
+}
+
+type VipInfo struct {
+	Id         int
+	VipType    int
+	VipOrderId int64
+	StartAt    time.Time
+	ExpireAt   time.Time
+	UserId     int
+}
+
 type AccountRepo interface {
 	FindByOpenidAndMethod(ctx context.Context, openid string, method string) (po *AccountPO, err error)
 	Save(ctx context.Context, accountPO *AccountPO) error
@@ -84,6 +105,9 @@ type UserRepo interface {
 	FindById(ctx context.Context, id uint64) (po *UserPO, err error)
 	Save(ctx context.Context, po *UserPO) error
 	SaveAccountAndUserTx(ctx context.Context, accountPO *AccountPO, userPO *UserPO) error
+	Become(ctx context.Context, req *BecomeOrderInfo) error
+	Callback(ctx context.Context, req *VipInfo, payStatus int) (*VipInfo, error)
+	GetOrderInfo(ctx context.Context, bizId int64) (*BecomeOrderInfo, error)
 }
 
 // UserUsecase is a User usecase.
@@ -221,5 +245,52 @@ func (usecase *UserUsecase) CurrentUserInfo(ctx context.Context) (*pb.UserInfoRe
 		RoleId:    uint32(int32(userPO.RoleId)),
 		UserId:    int32(userPO.UserId),
 		TeacherId: int32(userPO.TeacherId),
+	}, nil
+}
+
+func (u *UserUsecase) Become(ctx context.Context, req *pb.BecomeVipRequest) (*pb.BecomeVipReply, error) {
+	UserId, err := common.GetUserFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	BizId, err := common.NewIdGenerator(time.Now(), 1)
+	if err != nil {
+		return &pb.BecomeVipReply{}, err
+	}
+	becomeReq := &BecomeOrderInfo{
+		UserId:  int(UserId),
+		PayType: int(req.GetPayType()),
+		VipType: int(req.GetVipType()),
+		BizId:   BizId.GenID(),
+		Price:   float64(req.Price),
+	}
+	err = u.userRepo.Become(ctx, becomeReq)
+	if err != nil {
+		return &pb.BecomeVipReply{}, err
+	}
+	return &pb.BecomeVipReply{
+		PayLink: "https://mock-alipay.com/hgbonasdg146",
+		BizId:   becomeReq.BizId,
+	}, nil
+}
+
+func (u *UserUsecase) Callback(ctx context.Context, req *pb.TradeCallbackRequest) (*pb.TradeCallbackReply, error) {
+	OrderRecord, err := u.userRepo.GetOrderInfo(ctx, req.BizNo)
+	if err != nil {
+		u.log.Errorf("")
+		return nil, err
+	}
+	_, err = u.userRepo.Callback(ctx, &VipInfo{
+		VipType:    OrderRecord.VipType,
+		VipOrderId: OrderRecord.BizId,
+		StartAt:    OrderRecord.StartAt,
+		ExpireAt:   OrderRecord.ExpireAt,
+		UserId:     OrderRecord.UserId,
+	}, int(req.PayStatus))
+	if err != nil {
+		return nil, err
+	}
+	return &pb.TradeCallbackReply{
+		Message: "成功",
 	}, nil
 }
